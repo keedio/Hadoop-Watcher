@@ -25,22 +25,26 @@ class WatchableTest{
     val hdfsConfig = new Configuration()
 
 
+
     @Test
     def testGetCountFiles(): Unit = {
         println("##### testCountFiles: count number of files, via FileStatus vs ContentSummary")
 
-        //common parameters
-        val path: Path = new Path("src/test/resources/csv")
+        //count of files via watchable
+        val watchable = new WatchablePath("src/test/resources/csv", hdfsConfig, 1, 0)
+        val countOfFiles_2= watchable.getFiles().size
+
+        //count of files via contentSummary
+        val path: Path = new Path("src/test/resources")
         val fs = path.getFileSystem(hdfsConfig)
-
-        //count of files via Filestatus
         val arrayOfFileStatus: Array[FileStatus] = fs.listStatus(path)
-        val countOfFiles_1 = arrayOfFileStatus.filter(_.isFile).length
-
-
-        //count of files via ContentSummary
-        val contentSummary = fs.getContentSummary(path)
-        val countOfFiles_2 = contentSummary.getFileCount
+        var countOfFiles_1: Int = 0
+        arrayOfFileStatus.foreach(
+            f => f.isDirectory match {
+                case true => countOfFiles_1 += fs.getContentSummary(f.getPath).getFileCount.toInt
+                case false => ()
+            }
+        )
 
         assert(countOfFiles_1 == countOfFiles_2, countOfFiles_1 + " != " + countOfFiles_2)
 
@@ -172,6 +176,9 @@ class WatchableTest{
                         Files.write(Paths.get("src/test/resources/csv/file1.csv"),
                             "192.168.0.0;24;MOZAMBIQUE\n".getBytes(),
                             StandardOpenOption.APPEND)
+                        Files.write(Paths.get("src/test/resources/csv/csv0/csv1/file5.csv"),
+                            "Go back to Madrid\n".getBytes(),
+                            StandardOpenOption.APPEND)
                     } catch {
                         case e: IOException => LOG.error("I/O: conditionsGenerator", e)
                             assert(false)
@@ -182,6 +189,8 @@ class WatchableTest{
                     try {
                         for (i <- 1 to 10)
                             Files.createFile(Paths.get(s"src/test/resources/csv/file_Created${i}.csv"))
+                        for (i <- 1 to 10)
+                            Files.createFile(Paths.get(s"src/test/resources/csv/csv0/file_Created${i + 1}.csv"))
                     } catch {
                         case e: IOException => LOG.error("I/O: conditionsGenerator", e)
                             assert(false)
@@ -192,6 +201,8 @@ class WatchableTest{
                     try {
                         for (i <- 1 to 10)
                             Files.deleteIfExists(Paths.get(s"src/test/resources/csv/file_Created${i}.csv"))
+                        for (i <- 1 to 10)
+                            Files.deleteIfExists(Paths.get(s"src/test/resources/csv/csv0/file_Created${i + 1}.csv"))
                     } catch {
                         case e: IOException => LOG.error("I/O: conditionsGenerator", e)
                             assert(false)
