@@ -9,7 +9,8 @@ Normally a object interested in events (listener) from a path to be watched shou
 * String path to be watched.
 * Hadoop config.
 * Start time in seconds.
-* Periodic time in seconds
+* Periodic time in seconds.
+* Regexp for matching files.
 
 The listener will have to register himself to the watchable object and will implement what to do, when something happens in the monitored path.
 
