@@ -1,8 +1,10 @@
 package org.keedio.hadoop.watcher
 
-import java.util.concurrent.{Executors, ScheduledExecutorService, ScheduledFuture, TimeUnit}
 
+import java.util.concurrent.{ScheduledExecutorService, ScheduledFuture, TimeUnit, Executors}
 import scala.collection.mutable.ListBuffer
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs._
 
 
 /**
@@ -137,5 +139,3 @@ class WatchablePath(csvDir: String, hdfsConfig: Configuration, refresh: Int, sta
         files.map(file => file.getModificationTime).toList
     }
 }
-
-
