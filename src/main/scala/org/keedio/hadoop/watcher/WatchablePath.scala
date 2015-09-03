@@ -5,6 +5,7 @@ import java.util.concurrent.{ScheduledExecutorService, ScheduledFuture, TimeUnit
 import scala.collection.mutable.ListBuffer
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs._
+import scala.util.matching.Regex
 
 
 /**
@@ -20,7 +21,7 @@ import org.apache.hadoop.fs._
  * @param refresh
  */
 
-class WatchablePath(csvDir: String, hdfsConfig: Configuration, refresh: Int, start: Int ){
+class WatchablePath(csvDir: String, hdfsConfig: Configuration, refresh: Int, start: Int, regex: Regex ){
 
     private var filesCount: Int = 0
     private var filesTimeList: List[Long] = Nil
@@ -118,7 +119,7 @@ class WatchablePath(csvDir: String, hdfsConfig: Configuration, refresh: Int, sta
         val path: Path = new Path(csvDir)
         val fs = path.getFileSystem(hdfsConfig)
         val arrayOfFileStatus: Array[FileStatus] = fs.listStatus(path)
-        val a: Array[Array[FileStatus]] = arrayOfFileStatus.map(fileStatus => getRecursiveListFiles(fileStatus ))
+        val a: Array[Array[FileStatus]] = arrayOfFileStatus.map(fileStatus => getRecursiveListFiles(fileStatus, regex ))
         a.flatMap(_.toList).filter(_.isFile)
     }
 
@@ -145,11 +146,12 @@ class WatchablePath(csvDir: String, hdfsConfig: Configuration, refresh: Int, sta
      * @param fileStatus
      * @return
      */
-    def getRecursiveListFiles(fileStatus:FileStatus): Array[FileStatus] = {
+    def getRecursiveListFiles(fileStatus:FileStatus, regex: Regex): Array[FileStatus] = {
         val path : Path = fileStatus.getPath
         val fs = path.getFileSystem(hdfsConfig)
         val arrayOfFileStatus = fs.listStatus(path)
-        arrayOfFileStatus ++ arrayOfFileStatus.filter(_.isDirectory).flatMap(getRecursiveListFiles)
+        val matches = arrayOfFileStatus.filter(fileStatus => regex.findFirstIn(fileStatus.getPath.toString).isDefined)
+        matches ++ arrayOfFileStatus.filter(_.isDirectory).flatMap(getRecursiveListFiles(_,regex))
     }
 
 }
