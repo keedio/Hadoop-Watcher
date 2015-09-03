@@ -12,6 +12,8 @@ import java.util.concurrent._
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
+import scala.util.matching.Regex
+
 /**
  * Created by luislazaro on 27/8/15.
  * lalazaro@keedio.com
@@ -23,6 +25,8 @@ class WatchableTest{
 
     val LOG: Logger = LoggerFactory.getLogger(classOf[WatchableTest])
     val hdfsConfig = new Configuration()
+    val csvRegex: Regex = """[^.]*\.csv?""".r
+    val anything: Regex = """.*""".r
 
 
 
@@ -31,7 +35,7 @@ class WatchableTest{
         println("##### testCountFiles: count number of files, via FileStatus vs ContentSummary")
 
         //count of files via watchable
-        val watchable = new WatchablePath("src/test/resources/csv", hdfsConfig, 1, 0)
+        val watchable = new WatchablePath("src/test/resources/csv", hdfsConfig, 1, 0, anything)
         val countOfFiles_2= watchable.getFiles().size
 
         //count of files via contentSummary
@@ -50,11 +54,35 @@ class WatchableTest{
 
     }
 
+    @Test
+    def testGetCountFilesREGEX(): Unit = {
+        println("##### testCountFilesREGEX: count number of files, via FileStatus vs ContentSummary")
+
+        //count of files via watchable
+        val watchable = new WatchablePath("src/test/resources/csv", hdfsConfig, 1, 0, csvRegex)
+        val countOfFiles_2= watchable.getFiles().size
+
+        //count of files via contentSummary
+        val path: Path = new Path("src/test/resources")
+        val fs = path.getFileSystem(hdfsConfig)
+        val arrayOfFileStatus: Array[FileStatus] = fs.listStatus(path)
+        var countOfFiles_1: Int = 0
+        arrayOfFileStatus.foreach(
+            f => f.isDirectory match {
+                case true => countOfFiles_1 += fs.getContentSummary(f.getPath).getFileCount.toInt
+                case false => ()
+            }
+        )
+
+        assert(countOfFiles_1 != countOfFiles_2, countOfFiles_1 + " == " + countOfFiles_2)
+
+    }
+
 
     @Test
     def testListOfFilesTime(): Unit = {
         println("##### testListOfFilesTime: test equality of list of mofified times (long) ")
-        val watchable = new WatchablePath("src/test/resources/csv", hdfsConfig, 2, 2)
+        val watchable = new WatchablePath("src/test/resources/csv", hdfsConfig, 2, 2, csvRegex)
         val files: Array[FileStatus] = watchable.getFiles()
         val filesTimeList1: List[Long] = watchable.getTimeFiles(files)
         val filesTimeList2: List[Long] = watchable.getTimeFiles(files)
@@ -76,7 +104,7 @@ class WatchableTest{
     def testFireEvent(): Unit = {
         println("##### testFireEvent: all the status fire an event identified by the proper status ")
         val pathStatus: PathState = PathState.ENTRY_CREATE
-        val watchable = new WatchablePath("src/test/resources/csv", hdfsConfig, 2, 2)
+        val watchable = new WatchablePath("src/test/resources/csv", hdfsConfig, 2, 2, csvRegex)
 
         val listener = new PathStateListener {
             override def statusReceived(event: PathStateEvent): Unit = {
@@ -149,7 +177,7 @@ class WatchableTest{
         println("##### testWatchPath : watch directory a send events according actions  ")
         val refreshTime = 2
         val startTime = 2
-        val watchable = new WatchablePath("src/test/resources/csv", hdfsConfig, refreshTime, startTime)
+        val watchable = new WatchablePath("src/test/resources/csv", hdfsConfig, refreshTime, startTime, csvRegex)
         val listener = new PathStateListener {
             override def statusReceived(event: PathStateEvent): Unit = {
                 println("listener received event: " + event.getPathStatus.toString())
@@ -189,8 +217,10 @@ class WatchableTest{
                     try {
                         for (i <- 1 to 10)
                             Files.createFile(Paths.get(s"src/test/resources/csv/file_Created${i}.csv"))
-                        for (i <- 1 to 10)
+                        for (i <- 1 to 5)
                             Files.createFile(Paths.get(s"src/test/resources/csv/csv0/file_Created${i + 1}.csv"))
+                        for (i <- 1 to 5)
+                            Files.createFile(Paths.get(s"src/test/resources/csv/csv0/file_Created${i + 1}.txt"))
                     } catch {
                         case e: IOException => LOG.error("I/O: conditionsGenerator", e)
                             assert(false)
@@ -201,8 +231,10 @@ class WatchableTest{
                     try {
                         for (i <- 1 to 10)
                             Files.deleteIfExists(Paths.get(s"src/test/resources/csv/file_Created${i}.csv"))
-                        for (i <- 1 to 10)
+                        for (i <- 1 to 5)
                             Files.deleteIfExists(Paths.get(s"src/test/resources/csv/csv0/file_Created${i + 1}.csv"))
+                        for (i <- 1 to 5)
+                            Files.deleteIfExists(Paths.get(s"src/test/resources/csv/csv0/file_Created${i + 1}.txt"))
                     } catch {
                         case e: IOException => LOG.error("I/O: conditionsGenerator", e)
                             assert(false)
