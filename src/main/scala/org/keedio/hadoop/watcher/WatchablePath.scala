@@ -5,6 +5,7 @@ import java.util.concurrent.{ScheduledExecutorService, ScheduledFuture, TimeUnit
 import scala.collection.mutable.ListBuffer
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs._
+import scala.util.matching.Regex
 
 
 /**
@@ -20,7 +21,7 @@ import org.apache.hadoop.fs._
  * @param refresh
  */
 
-class WatchablePath(csvDir: String, hdfsConfig: Configuration, refresh: Int, start: Int ){
+class WatchablePath(csvDir: String, hdfsConfig: Configuration, refresh: Int, start: Int, regex: Regex ){
 
     private var filesCount: Int = 0
     private var filesTimeList: List[Long] = Nil
@@ -111,14 +112,15 @@ class WatchablePath(csvDir: String, hdfsConfig: Configuration, refresh: Int, sta
 
 
     /**
-     * Get an Array of Filestatus
+     * Get an Array of Filestatus as Files in the directories tree
      * @return
      */
     def getFiles(): Array[FileStatus] = {
         val path: Path = new Path(csvDir)
         val fs = path.getFileSystem(hdfsConfig)
         val arrayOfFileStatus: Array[FileStatus] = fs.listStatus(path)
-        arrayOfFileStatus.filter(_.isFile)
+        val a: Array[Array[FileStatus]] = arrayOfFileStatus.map(fileStatus => getRecursiveListFiles(fileStatus, regex ))
+        a.flatMap(_.toList).filter(_.isFile)
     }
 
     /**
@@ -138,4 +140,18 @@ class WatchablePath(csvDir: String, hdfsConfig: Configuration, refresh: Int, sta
     def getTimeFiles(files: Array[FileStatus]): List[Long] = {
         files.map(file => file.getModificationTime).toList
     }
+
+    /**
+     * Get an array of files in FileStatus as directory recursively
+     * @param fileStatus
+     * @return
+     */
+    def getRecursiveListFiles(fileStatus:FileStatus, regex: Regex): Array[FileStatus] = {
+        val path : Path = fileStatus.getPath
+        val fs = path.getFileSystem(hdfsConfig)
+        val arrayOfFileStatus = fs.listStatus(path)
+        val matches = arrayOfFileStatus.filter(fileStatus => regex.findFirstIn(fileStatus.getPath.toString).isDefined)
+        matches ++ arrayOfFileStatus.filter(_.isDirectory).flatMap(getRecursiveListFiles(_,regex))
+    }
+
 }
