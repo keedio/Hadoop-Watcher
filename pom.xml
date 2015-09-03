@@ -27,8 +27,8 @@
   </developers>
 
   <scm>
-    <connection>scm:git:git@github.com:keedio/Hadoop_Watcher.git</connection>
-    <developerConnection>scm:git:git@github.com:keedio/Hadoop_Watcher.git</developerConnection>
+    <connection>scm:git:git@github.com:keedio/Hadoop-Watcher.git</connection>
+    <developerConnection>scm:git:git@github.com:keedio/Hadoop-Watcher.git</developerConnection>
     <url>https://github.com/keedio/Hadoop-Watcher.git</url>
   </scm>
 
