@@ -1,10 +1,16 @@
 package org.keedio.hadoop.watcher
 
-import java.io.IOException
-import java.nio.file.{Files, Paths, StandardOpenOption}
-import java.util.concurrent._
 
+import java.io.{IOException}
+import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.fs.{Path, FileStatus}
 import org.junit._
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.StandardOpenOption
+import java.util.concurrent._
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 /**
  * Created by luislazaro on 27/8/15.
@@ -13,8 +19,9 @@ import org.junit._
  */
 
 
-class WatchableTest extends Logging {
+class WatchableTest{
 
+    val LOG: Logger = LoggerFactory.getLogger(classOf[WatchableTest])
     val hdfsConfig = new Configuration()
 
 
@@ -50,9 +57,9 @@ class WatchableTest extends Logging {
         assert(filesTimeList1 == filesTimeList2, filesTimeList1 + " != " + filesTimeList2)
 
         try {
-            Files.write(Paths.get("src/test/resources/csv/file_4.csv"), "224.0.0.0;8;Nicaragua\n".getBytes(), StandardOpenOption.APPEND);
+            Files.write(Paths.get("src/test/resources/csv/file2.csv"), "224.0.0.0;8;Nicaragua\n".getBytes(), StandardOpenOption.APPEND);
         } catch {
-            case e: IOException => log.error("I/O: testListOfFilesTime", e)
+            case e: IOException => LOG.error("I/O: testListOfFilesTime", e)
                 assert(false)
         }
 
@@ -162,11 +169,11 @@ class WatchableTest extends Logging {
                 case 3 =>
                     println("append to file")
                     try {
-                        Files.write(Paths.get("src/test/resources/csv/file_4.csv"),
+                        Files.write(Paths.get("src/test/resources/csv/file1.csv"),
                             "192.168.0.0;24;MOZAMBIQUE\n".getBytes(),
                             StandardOpenOption.APPEND)
                     } catch {
-                        case e: IOException => log.error("I/O: conditionsGenerator", e)
+                        case e: IOException => LOG.error("I/O: conditionsGenerator", e)
                             assert(false)
                     }
 
@@ -176,7 +183,7 @@ class WatchableTest extends Logging {
                         for (i <- 1 to 10)
                             Files.createFile(Paths.get(s"src/test/resources/csv/file_Created${i}.csv"))
                     } catch {
-                        case e: IOException => log.error("I/O: conditionsGenerator", e)
+                        case e: IOException => LOG.error("I/O: conditionsGenerator", e)
                             assert(false)
                     }
 
@@ -186,7 +193,7 @@ class WatchableTest extends Logging {
                         for (i <- 1 to 10)
                             Files.deleteIfExists(Paths.get(s"src/test/resources/csv/file_Created${i}.csv"))
                     } catch {
-                        case e: IOException => log.error("I/O: conditionsGenerator", e)
+                        case e: IOException => LOG.error("I/O: conditionsGenerator", e)
                             assert(false)
                     }
 
@@ -194,7 +201,7 @@ class WatchableTest extends Logging {
                     try {
                         Files.deleteIfExists(Paths.get("src/test/resources/csv/file_Created.csv"))
                     } catch {
-                        case e: IOException => log.error("I/O: conditionsGenerator", e)
+                        case e: IOException => LOG.error("I/O: conditionsGenerator", e)
                             assert(false)
                     }
                 case _ => ()
@@ -205,6 +212,3 @@ class WatchableTest extends Logging {
     }
 
 }
-
-// end of test class
-
