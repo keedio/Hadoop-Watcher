@@ -14,5 +14,6 @@ Normally a object interested in events (listener) from a path to be watched shou
 The listener will have to register himself to the watchable object and will implement what to do, when something happens in the monitored path.
 
 The path will be checked periodically for new files or changes in its modification times.
+If the path contains subpaths, changes under subdirectories will all be watched.
 
 
